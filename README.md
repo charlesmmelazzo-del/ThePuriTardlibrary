@@ -1,4 +1,6 @@
-# The Puritan Library
+# The PuriTard Library
+
+*Rich Historical Texts for Modern Tards*
 
 A web app for reading Puritan and Reformed classics paragraph by paragraph. Each paragraph is a card: modern English on one side, the original text on the other. Swipe sideways to flip it.
 
@@ -30,7 +32,7 @@ A web app for reading Puritan and Reformed classics paragraph by paragraph. Each
    | `ADMIN_EMAIL` | your admin login email |
    | `ADMIN_PASSWORD` | your admin password |
    | `SUPPORT_EMAIL` | email shown for login help (defaults to mike@cgcocktails.com) |
-   | `APP_NAME` | optional; defaults to "The Puritan Library" |
+   | `APP_NAME` / `APP_TAGLINE` | optional; default to "The PuriTard Library" and "Rich Historical Texts for Modern Tards" |
    | `NODE_ENV` | `production` |
 
 5. Under **Settings → Networking**, click **Generate Domain**.

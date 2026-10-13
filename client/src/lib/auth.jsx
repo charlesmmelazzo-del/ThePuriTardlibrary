@@ -5,7 +5,7 @@ const AppContext = createContext(null);
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#17140f' : '#f6f1e7');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#121212' : '#ffffff');
   try {
     localStorage.setItem('pl-theme', theme);
   } catch {
@@ -15,7 +15,7 @@ function applyTheme(theme) {
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [config, setConfig] = useState({ appName: 'The Puritan Library', supportEmail: '' });
+  const [config, setConfig] = useState({ appName: 'The PuriTard Library', tagline: '', supportEmail: '' });
   const [loading, setLoading] = useState(true);
   const [theme, setThemeState] = useState(() => document.documentElement.dataset.theme || 'light');
 
@@ -23,7 +23,7 @@ export function AppProvider({ children }) {
     Promise.all([api('/config').catch(() => null), api('/auth/me').catch(() => ({ user: null }))]).then(([cfg, me]) => {
       if (cfg) {
         setConfig(cfg);
-        document.title = cfg.appName;
+        document.title = cfg.tagline ? `${cfg.appName}: ${cfg.tagline}` : cfg.appName;
       }
       setUser(me.user);
       if (me.user?.theme) {

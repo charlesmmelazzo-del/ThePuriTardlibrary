@@ -1,44 +1,45 @@
 /* ---------- Theme ---------- */
 :root {
-  --bg: #f6f1e7;
-  --surface: #fffdf8;
-  --surface-2: #efe8da;
-  --text: #2a241e;
-  --muted: #6f655a;
-  --border: #e0d6c4;
-  --accent: #7a2e2e;
-  --accent-text: #fff8ef;
-  --accent-soft: #f1e1d8;
-  --ok: #2f6b3a;
-  --ok-soft: #e3efe2;
-  --warn: #8a5a12;
-  --warn-soft: #f6ead2;
-  --danger: #a3302a;
-  --mark: #f3dc8c;
-  --shadow: 0 1px 2px rgb(60 40 20 / 0.06), 0 4px 16px rgb(60 40 20 / 0.06);
-  --radius: 12px;
-  --serif: 'EB Garamond', Garamond, 'Iowan Old Style', Georgia, serif;
+  /* Clean, quiet, typography-first look: white page, near-black serif text, one deep red accent. */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f3;
+  --text: #1b1b1b;
+  --muted: #707070;
+  --border: #e5e5e3;
+  --accent: #9b1b1f;
+  --accent-text: #ffffff;
+  --accent-soft: #f8eded;
+  --ok: #2e6b3c;
+  --ok-soft: #eaf3ec;
+  --warn: #8a5410;
+  --warn-soft: #fbf2e4;
+  --danger: #b3261e;
+  --mark: #fbe7a6;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.04);
+  --radius: 10px;
+  --serif: 'Source Serif 4', 'Iowan Old Style', Georgia, serif;
   --sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --reader-size: 18px;
+  --reader-size: 19px;
   color-scheme: light;
 }
 :root[data-theme='dark'] {
-  --bg: #17140f;
-  --surface: #211d17;
-  --surface-2: #2b261e;
-  --text: #ebe3d3;
-  --muted: #a89d8c;
-  --border: #3a3329;
-  --accent: #d9a067;
-  --accent-text: #1d1812;
-  --accent-soft: #3a2c1f;
-  --ok: #8cc795;
-  --ok-soft: #22301f;
-  --warn: #e0b46a;
-  --warn-soft: #3a2f1c;
-  --danger: #ec8a80;
-  --mark: #6b5420;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+  --bg: #121212;
+  --surface: #1a1a1a;
+  --surface-2: #242424;
+  --text: #e6e6e4;
+  --muted: #9a9a96;
+  --border: #2e2e2c;
+  --accent: #e0645d;
+  --accent-text: #121212;
+  --accent-soft: #2d1d1c;
+  --ok: #86c596;
+  --ok-soft: #1c2a20;
+  --warn: #e3b26a;
+  --warn-soft: #2e261a;
+  --danger: #f08a82;
+  --mark: #5c4a17;
+  --shadow: none;
   color-scheme: dark;
 }
 
@@ -64,19 +65,20 @@ body {
 h1,
 h2,
 h3 {
-  font-family: var(--serif);
-  font-weight: 600;
+  font-family: var(--sans);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.2;
   margin: 0 0 0.5em;
 }
 h1 {
-  font-size: 2rem;
+  font-size: 1.75rem;
 }
 h2 {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
 }
 h3 {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
 }
 a {
   color: var(--accent);
@@ -379,8 +381,7 @@ label.checkbox {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(8px);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
 .header-inner {
@@ -394,12 +395,24 @@ label.checkbox {
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  font-family: var(--serif);
-  font-weight: 600;
-  font-size: 1.2rem;
+  gap: 0.6rem;
   color: var(--text);
   white-space: nowrap;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.brand-name {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.15rem;
+}
+.brand-tagline {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
 }
 .brand:hover {
   text-decoration: none;
@@ -500,7 +513,6 @@ label.checkbox {
   border-radius: var(--radius);
   padding: 1.2rem;
   margin-bottom: 1rem;
-  box-shadow: var(--shadow);
 }
 .card-head {
   display: flex;
@@ -527,9 +539,7 @@ label.checkbox {
   display: grid;
   place-items: center;
   padding: 1.5rem 1rem;
-  background:
-    radial-gradient(circle at 20% 10%, var(--accent-soft), transparent 45%),
-    var(--bg);
+  background: var(--surface-2);
 }
 .auth-theme {
   position: fixed;
@@ -547,12 +557,23 @@ label.checkbox {
 }
 .auth-brand {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.7rem;
+  text-align: center;
+  gap: 0.4rem;
+  margin-bottom: 1.6rem;
+  padding-bottom: 1.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.auth-brand-name {
   font-family: var(--serif);
-  font-size: 1.35rem;
+  font-size: 1.6rem;
   font-weight: 600;
-  margin-bottom: 1.4rem;
+}
+.auth-tagline {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--muted);
 }
 .auth-switch {
   text-align: center;
@@ -789,6 +810,8 @@ label.checkbox {
   gap: 0.8rem;
 }
 .book-hero h1 {
+  font-family: var(--serif);
+  font-weight: 600;
   font-size: 2.4rem;
   margin: 0;
 }
@@ -937,7 +960,7 @@ label.checkbox {
   color: var(--warn);
 }
 .reader-body {
-  max-width: 760px;
+  max-width: 680px;
   margin: 0 auto;
   padding: 1.5rem 1rem 3rem;
 }
@@ -946,8 +969,18 @@ label.checkbox {
   margin: 1rem 0 2rem;
 }
 .section-head h1 {
-  font-size: 2rem;
-  margin-bottom: 0.3rem;
+  font-family: var(--sans);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0.2rem 0 0.4rem;
+}
+.section-head .eyebrow {
+  font-family: var(--serif);
+  font-size: 1.9rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
 }
 .hint {
   display: flex;
@@ -970,7 +1003,11 @@ label.checkbox {
   margin-top: -4px;
 }
 .para-wrap {
-  margin-bottom: 1.4rem;
+  padding: 1.1rem 0 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.para-wrap:last-of-type {
+  border-bottom: 0;
 }
 .para {
   scroll-margin-top: 110px;
@@ -991,32 +1028,31 @@ label.checkbox {
   grid-area: 1 / 1;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.1rem 1.3rem 1.2rem;
-  box-shadow: var(--shadow);
+  background: var(--bg);
+  padding: 0.2rem 0 0.4rem;
 }
 .flip-face.back {
   transform: rotateY(180deg);
-  background: color-mix(in srgb, var(--surface) 82%, var(--warn-soft));
 }
 .para.highlight .flip-face {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  background: var(--accent-soft);
+  border-radius: 6px;
 }
 .face-label {
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 600;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+.back .face-label {
+  color: var(--accent);
 }
 .para-text {
   font-family: var(--serif);
   font-size: var(--reader-size);
-  line-height: 1.65;
+  line-height: 1.75;
   margin: 0;
   white-space: pre-line;
   hyphens: auto;
@@ -1028,8 +1064,13 @@ label.checkbox {
 .para-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.2rem;
-  margin-top: 0.3rem;
+  gap: 0.1rem;
+  margin-top: 0.1rem;
+  opacity: 0.75;
+}
+.para-wrap:hover .para-actions,
+.para-actions:focus-within {
+  opacity: 1;
 }
 .para-btn {
   display: inline-flex;
@@ -1544,7 +1585,7 @@ label.checkbox {
     padding: 1rem 0.75rem 3rem;
   }
   .flip-face {
-    padding: 0.9rem 1rem 1rem;
+    padding: 0.2rem 0 0.4rem;
   }
   .meta-grid {
     grid-template-columns: 1fr;
@@ -1573,8 +1614,15 @@ label.checkbox {
   }
 }
 @media (max-width: 480px) {
-  .brand span {
-    font-size: 1.05rem;
+  .auth-page {
+    padding-top: 3.8rem;
+    align-items: start;
+  }
+  .brand-name {
+    font-size: 1.02rem;
+  }
+  .brand-tagline {
+    font-size: 0.62rem;
   }
   .continue-card .cover {
     display: none;

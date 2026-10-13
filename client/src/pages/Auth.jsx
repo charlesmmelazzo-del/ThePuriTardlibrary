@@ -25,8 +25,9 @@ function AuthShell({ title, subtitle, children }) {
       <div className="auth-theme"><ThemeToggle /></div>
       <div className="auth-card">
         <div className="auth-brand">
-          <img src="/favicon.svg" alt="" width="44" height="44" />
-          <div>{config.appName}</div>
+          <img src="/favicon.svg" alt="" width="48" height="48" />
+          <div className="auth-brand-name">{config.appName}</div>
+          {config.tagline && <div className="auth-tagline">{config.tagline}</div>}
         </div>
         <h1>{title}</h1>
         {subtitle && <p className="muted">{subtitle}</p>}

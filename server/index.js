@@ -39,7 +39,8 @@ app.use(loadUser);
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/config', (_req, res) =>
   res.json({
-    appName: process.env.APP_NAME || 'The Puritan Library',
+    appName: process.env.APP_NAME || 'The PuriTard Library',
+    tagline: process.env.APP_TAGLINE ?? 'Rich Historical Texts for Modern Tards',
     supportEmail: process.env.SUPPORT_EMAIL || 'mike@cgcocktails.com',
   }),
 );

@@ -62,8 +62,11 @@ export default function Layout() {
       <header className="site-header">
         <div className="header-inner">
           <Link to="/" className="brand">
-            <img src="/favicon.svg" alt="" width="28" height="28" />
-            <span>{config.appName}</span>
+            <img src="/favicon.svg" alt="" width="30" height="30" />
+            <span className="brand-text">
+              <span className="brand-name">{config.appName}</span>
+              {config.tagline && <span className="brand-tagline">{config.tagline}</span>}
+            </span>
           </Link>
           <nav className="main-nav" aria-label="Main">
             {links
