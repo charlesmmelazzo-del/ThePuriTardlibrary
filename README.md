@@ -50,13 +50,14 @@ On every start the server creates the database tables if needed and makes sure t
 
 ### From a side-by-side PDF
 
-Books in `content/books/*.json` are added to the library automatically the next time the server starts (only if no book with that title exists yet, so later edits in the admin panel are kept). A two-column "original | modern English" PDF with numbered paragraph pairs can be converted with:
+To have ChatGPT produce a PDF in the right format, give it the prompt in [docs/CHATGPT_PDF_PROMPT.md](docs/CHATGPT_PDF_PROMPT.md).
+
+Books in `content/books/*.json` are added to the library automatically the next time the server starts (only if no book with that title exists yet, so later edits in the admin panel are kept). A two-column "original | modern English" PDF (or several, for a long book) can be converted with the command below. Title, author, year and description come from the PDF's BOOK INFO page, or from `--title`, `--author`, `--year` and `--description`.
 
 ```bash
 pip install pdfplumber
-python3 scripts/pdf-to-book.py book.pdf content/books/book.json \
-  --title "The Mortification of Sin" --author "John Owen" --year 1656 \
-  --cover /covers/mortification-of-sin.webp --skip-prefix ED
+python3 scripts/pdf-to-book.py "Book - Part 1 of 2.pdf" "Book - Part 2 of 2.pdf" content/books/book.json \
+  --cover /covers/book.webp
 ```
 
 Cover images go in `client/public/covers/`.
