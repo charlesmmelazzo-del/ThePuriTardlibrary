@@ -1,0 +1,39 @@
+{
+  "title": "The Pilgrim's Progress (sample)",
+  "author": "John Bunyan",
+  "year": 1678,
+  "description": "A short sample showing the import format. The opening of Bunyan's allegory of the Christian life.",
+  "chapters": [
+    {
+      "title": "The First Stage",
+      "sections": [
+        {
+          "title": "The Dream",
+          "paragraphs": [
+            {
+              "original": "As I walk'd through the wilderness of this world, I lighted on a certain place where was a Den, and I laid me down in that place to sleep: and as I slept I dreamed a dream. I dreamed, and behold I saw a man cloathed with rags, standing in a certain place, with his face from his own house, a book in his hand, and a great burden upon his back.",
+              "modern": "As I walked through the wilderness of this world, I came to a place where there was a cave, and I lay down there to sleep. As I slept, I had a dream. In my dream I saw a man dressed in rags, standing with his back to his own house, a book in his hand and a heavy burden on his back."
+            },
+            {
+              "original": "I looked, and saw him open the book, and read therein; and as he read, he wept and trembled; and not being able longer to contain, he brake out with a lamentable cry, saying, What shall I do?",
+              "modern": "I watched him open the book and read it. As he read, he wept and trembled, until he could hold it in no longer and broke out with a mournful cry: \"What shall I do?\""
+            }
+          ]
+        },
+        {
+          "title": "Christian at Home",
+          "paragraphs": [
+            {
+              "original": "In this plight, therefore, he went home and refrained himself as long as he could, that his wife and children should not perceive his distress; but he could not be silent long, because that his trouble increased.",
+              "modern": "In this condition he went home and held himself together as long as he could, so that his wife and children would not see how distressed he was. But he could not stay quiet for long, because his trouble kept growing."
+            },
+            {
+              "original": "Wherefore at length he brake his mind to his wife and children; and thus he began to talk to them: O my dear wife, said he, and you the children of my bowels, I, your dear friend, am in myself undone by reason of a burden that lieth hard upon me.",
+              "modern": "So at last he opened his heart to his wife and children and began to speak to them: \"My dear wife,\" he said, \"and you, my own children, I, who love you, am undone by a burden that lies heavily on me.\""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
