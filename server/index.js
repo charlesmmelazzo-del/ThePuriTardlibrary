@@ -7,6 +7,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import { migrate } from './db.js';
 import { ensureAdmin, loadUser } from './auth.js';
+import { seedBooks } from './seed.js';
 import authRoutes from './routes/auth.js';
 import bookRoutes from './routes/books.js';
 import meRoutes from './routes/me.js';
@@ -67,4 +68,5 @@ app.use((err, _req, res, _next) => {
 const port = Number(process.env.PORT) || 3000;
 await migrate();
 await ensureAdmin();
+await seedBooks();
 app.listen(port, () => console.log(`Listening on http://localhost:${port}`));
