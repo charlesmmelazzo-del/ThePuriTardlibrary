@@ -7,9 +7,11 @@ import Icon from '../components/Icon.jsx';
 import NoteEditor from '../components/NoteEditor.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
 import { goalMessage } from '../components/GoalSummary.jsx';
+import DefinitionPopover from '../components/DefinitionPopover.jsx';
 import { Toc } from './Book.jsx';
 
 const HINT_KEY = 'pl-flip-hint-dismissed';
+const GLOSSARY_KEY = 'pl-glossary-mode';
 
 function useStoredFlag(key) {
   const [value, setValue] = useState(() => {
@@ -48,6 +50,29 @@ export default function Reader() {
   const [goal, setGoal] = useState(null);
   const [hintDismissed, dismissHint] = useStoredFlag(HINT_KEY);
   const [highlightId, setHighlightId] = useState(null);
+  const [glossary, setGlossary] = useState(() => {
+    try {
+      return localStorage.getItem(GLOSSARY_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [define, setDefine] = useState(null); // { word, rect }
+  const [groupStatus, setGroupStatus] = useState([]);
+  const closeDefine = useCallback(() => {
+    setDefine(null);
+    window.getSelection()?.removeAllRanges();
+  }, []);
+  const toggleGlossary = () => {
+    const next = !glossary;
+    setGlossary(next);
+    if (!next) closeDefine();
+    try {
+      localStorage.setItem(GLOSSARY_KEY, next ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  };
 
   const lastSaved = useRef({ at: null, throughSeq: 0 });
   const pending = useRef(null);
@@ -64,6 +89,9 @@ export default function Reader() {
         lastSaved.current.throughSeq = d.progress?.max_seq || 0;
       })
       .catch((e) => setError(e.message));
+    api(`/groups?book_id=${bookId}&today=${today()}`)
+      .then((d) => setGroupStatus(d.groups))
+      .catch(() => {});
   }, [bookId]);
 
   useEffect(() => {
@@ -191,14 +219,14 @@ export default function Reader() {
     updateMe({ font_size: next }).catch(() => {});
   };
 
-  const addNote = async (paragraphId, body) => {
-    const { note } = await api('/notes', { method: 'POST', body: { paragraph_id: paragraphId, body } });
+  const addNote = async (paragraphId, body, groupId) => {
+    const { note } = await api('/notes', { method: 'POST', body: { paragraph_id: paragraphId, body, group_id: groupId } });
     setSection((s) => ({ ...s, notes: [...s.notes, note] }));
     setEditing(null);
   };
   const saveNote = async (id, body) => {
     const { note } = await api(`/notes/${id}`, { method: 'PATCH', body: { body } });
-    setSection((s) => ({ ...s, notes: s.notes.map((n) => (n.id === id ? note : n)) }));
+    setSection((s) => ({ ...s, notes: s.notes.map((n) => (n.id === id ? { ...n, body: note.body, updated_at: note.updated_at } : n)) }));
     setEditing(null);
   };
   const deleteNote = async (id) => {
@@ -257,19 +285,52 @@ export default function Reader() {
               A+
             </button>
           </div>
+          <button
+            className={`icon-btn ${glossary ? 'active' : ''}`}
+            onClick={toggleGlossary}
+            aria-pressed={glossary}
+            aria-label="Glossary mode: tap a word to see its meaning"
+            title="Glossary mode: tap a word to see its meaning"
+          >
+            <Icon name="glossary" />
+          </button>
           <button className="icon-btn" onClick={() => setTocOpen(true)} aria-label="Contents">
             <Icon name="list" />
           </button>
         </div>
-        {goalMsg && !goal.complete && (
-          <Link to={`/books/${bookId}`} className={`goal-pill tone-${goalMsg.tone}`}>
-            <Icon name={goal.today_done ? 'check' : 'target'} size={14} />
-            {goal.today_done
-              ? "Today's reading done"
-              : goal.overdue
-                ? `${goal.remaining_paragraphs} paragraphs left`
-                : `${goal.today_left} paragraph${goal.today_left === 1 ? '' : 's'} left today${goal.behind ? ' (catching up)' : ''}`}
-          </Link>
+        {((goalMsg && !goal.complete) || groupStatus.length > 0) && (
+          <div className="pill-row">
+          {goalMsg && !goal.complete && (
+            <Link to={`/books/${bookId}`} className={`goal-pill tone-${goalMsg.tone}`}>
+              <Icon name={goal.today_done ? 'check' : 'target'} size={14} />
+              {goal.today_done
+                ? "Today's reading done"
+                : goal.overdue
+                  ? `${goal.remaining_paragraphs} paragraphs left`
+                  : `${goal.today_left} paragraph${goal.today_left === 1 ? '' : 's'} left today${goal.behind ? ' (catching up)' : ''}`}
+            </Link>
+          )}
+            {groupStatus.slice(0, 1).map((g) => {
+              const p = g.my_pace;
+              const label = p.finished
+                ? 'finished'
+                : p.status === 'on_track'
+                  ? 'caught up'
+                  : p.status === 'no_assignment'
+                    ? 'no reading assigned'
+                    : `${p.today_left} left today${p.status === 'behind' ? ' (catching up)' : ''}`;
+              return (
+                <Link key={g.id} to={`/groups/${g.id}`} className={`goal-pill ${p.status === 'behind' ? 'tone-behind' : p.status === 'on_track' || p.finished ? 'tone-done' : ''}`}>
+                  <Icon name="users" size={14} /> {g.name}: {label}
+                </Link>
+              );
+            })}
+            {groupStatus.length > 1 && (
+              <Link to="/groups" className="goal-pill">
+                +{groupStatus.length - 1} more group{groupStatus.length > 2 ? 's' : ''}
+              </Link>
+            )}
+          </div>
         )}
       </div>
 
@@ -295,6 +356,18 @@ export default function Reader() {
           </div>
         )}
 
+        {glossary && (
+          <div className="hint glossary-hint">
+            <Icon name="glossary" />
+            <span>
+              <strong>Glossary mode is on.</strong> Tap any word (or select a phrase) to see what it means.
+            </span>
+            <button className="icon-btn" onClick={toggleGlossary} aria-label="Turn off glossary mode">
+              <Icon name="close" size={18} />
+            </button>
+          </div>
+        )}
+
         {paragraphs.length === 0 && <p className="muted">This section has no text yet.</p>}
 
         {paragraphs.map((p) => {
@@ -308,6 +381,8 @@ export default function Reader() {
                 year={section.book.year}
                 noteCount={pNotes.length}
                 highlighted={highlightId === p.id}
+                glossary={glossary}
+                onDefine={(word, rect) => setDefine({ word, rect })}
                 onAddNote={() => {
                   setNotesOpen(open ? null : p.id);
                   setEditing(open || pNotes.length ? null : 'new');
@@ -316,7 +391,7 @@ export default function Reader() {
               />
               {!open && pNotes.length > 0 && (
                 <button className="note-peek" onClick={() => setNotesOpen(p.id)}>
-                  <Icon name="note" size={14} /> {pNotes[0].body.slice(0, 90)}
+                  <Icon name={pNotes.some((n) => n.group_id) ? 'users' : 'note'} size={14} /> {pNotes[0].body.slice(0, 90)}
                   {pNotes[0].body.length > 90 || pNotes.length > 1 ? '…' : ''}
                 </button>
               )}
@@ -326,22 +401,38 @@ export default function Reader() {
                     editing === n.id ? (
                       <NoteEditor key={n.id} initial={n.body} onSave={(b) => saveNote(n.id, b)} onCancel={() => setEditing(null)} />
                     ) : (
-                      <div key={n.id} className="note">
+                      <div key={n.id} className={`note ${n.group_id ? 'group-note' : ''}`}>
+                        {n.group_id && (
+                          <div className="note-author">
+                            <Icon name="users" size={13} /> {n.is_mine ? 'You' : n.author} · <span className="muted">{n.group_name}</span>
+                          </div>
+                        )}
                         <p>{n.body}</p>
                         <div className="note-meta">
-                          <span className="muted small">{formatDateTime(n.updated_at)}</span>
-                          <button className="link-btn" onClick={() => setEditing(n.id)}>
-                            Edit
-                          </button>
-                          <button className="link-btn danger" onClick={() => deleteNote(n.id)}>
-                            Delete
-                          </button>
+                          <span className="muted small">
+                            {n.group_id ? '' : 'Private · '}
+                            {formatDateTime(n.updated_at)}
+                          </span>
+                          {n.is_mine && (
+                            <button className="link-btn" onClick={() => setEditing(n.id)}>
+                              Edit
+                            </button>
+                          )}
+                          {(n.is_mine || n.can_moderate) && (
+                            <button className="link-btn danger" onClick={() => deleteNote(n.id)}>
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </div>
                     ),
                   )}
                   {editing === 'new' ? (
-                    <NoteEditor onSave={(b) => addNote(p.id, b)} onCancel={() => (pNotes.length ? setEditing(null) : setNotesOpen(null))} />
+                    <NoteEditor
+                      groups={section.groups || []}
+                      onSave={(b, gid) => addNote(p.id, b, gid)}
+                      onCancel={() => (pNotes.length ? setEditing(null) : setNotesOpen(null))}
+                    />
                   ) : (
                     <div className="row">
                       <button className="btn small" onClick={() => setEditing('new')}>
@@ -408,6 +499,8 @@ export default function Reader() {
           </aside>
         </div>
       )}
+
+      {define && <DefinitionPopover word={define.word} rect={define.rect} onClose={closeDefine} />}
 
       {sharing && (
         <ShareSheet paragraph={sharing.paragraph} initialVersion={sharing.version} source={source} onClose={() => setSharing(null)} />

@@ -13,7 +13,7 @@ export function todayFrom(req) {
   return isDate(d) ? d : new Date().toISOString().slice(0, 10);
 }
 
-async function locate(db, bookId, seq) {
+export async function locate(db, bookId, seq) {
   const { rows } = await db.query(
     `SELECT p.id AS paragraph_id, s.id AS section_id, s.title AS section_title, c.title AS chapter_title
      FROM paragraphs p JOIN sections s ON s.id = p.section_id JOIN chapters c ON c.id = s.chapter_id

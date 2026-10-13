@@ -51,6 +51,7 @@ export default function Layout() {
   const links = [
     { to: '/', label: 'Library', icon: 'library', end: true },
     { to: '/search', label: 'Search', icon: 'search', mobileOnly: true },
+    { to: '/groups', label: 'Groups', icon: 'users' },
     { to: '/goals', label: 'Goals', icon: 'target' },
     { to: '/notes', label: 'Notes', icon: 'note' },
     ...(user.is_admin ? [{ to: '/admin', label: 'Admin', icon: 'shield' }] : []),

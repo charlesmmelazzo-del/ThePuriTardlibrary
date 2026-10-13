@@ -20,6 +20,9 @@ import Search from './pages/Search.jsx';
 import Settings from './pages/Settings.jsx';
 import Admin from './pages/admin/Admin.jsx';
 import BookEditor from './pages/admin/BookEditor.jsx';
+import Groups from './pages/Groups.jsx';
+import GroupPage from './pages/Group.jsx';
+import Invite from './pages/Invite.jsx';
 import './styles.css';
 
 function RequireUser({ children, admin = false }) {
@@ -33,8 +36,13 @@ function RequireUser({ children, admin = false }) {
 
 function GuestOnly({ children }) {
   const { user, loading } = useApp();
+  const location = useLocation();
   if (loading) return <div className="page-loading">Loading…</div>;
-  return user ? <Navigate to="/" replace /> : children;
+  if (user) {
+    const invite = new URLSearchParams(location.search).get('invite');
+    return <Navigate to={invite ? `/invite/${invite}` : '/'} replace />;
+  }
+  return children;
 }
 
 const router = createBrowserRouter(
@@ -42,12 +50,15 @@ const router = createBrowserRouter(
     <>
       <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/signup" element={<GuestOnly><Signup /></GuestOnly>} />
+      <Route path="/invite/:token" element={<Invite />} />
       <Route element={<RequireUser><Layout /></RequireUser>}>
         <Route index element={<Library />} />
         <Route path="books/:bookId" element={<BookPage />} />
         <Route path="read/:bookId/:sectionId" element={<Reader />} />
         <Route path="notes" element={<Notes />} />
         <Route path="goals" element={<Goals />} />
+        <Route path="groups" element={<Groups />} />
+        <Route path="groups/:groupId" element={<GroupPage />} />
         <Route path="search" element={<Search />} />
         <Route path="settings" element={<Settings />} />
       </Route>

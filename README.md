@@ -15,6 +15,9 @@ A web app for reading Puritan and Reformed classics paragraph by paragraph. Each
 - **Global search** across the original and modern text of every book, book titles and authors, and your own notes.
 - **Light and dark mode**, saved to each account. Adjustable text size.
 - **Accounts.** Sign up with an email and password. The login page shows the support email for anyone who gets stuck.
+- **Glossary mode.** Switch it on in the reader, then tap any word (or select a phrase) for a pop-up definition. Older and Puritan senses come from the app's own glossary (editable under *Admin → Glossary*), with a regular dictionary definition from Wiktionary underneath.
+- **Shelves.** *All books* is the whole library. Every reader has *My Shelf* (tap the bookmark on any cover) and can create more shelves, like playlists.
+- **Reading groups.** A host starts a group for a book and adds people by email. People without an account get an invitation email whose link leads to sign-up with their email filled in, and they join the group automatically. The app can set the pace from a finish date, or hosts can assign readings by hand. Latecomers get a catch-up plan. Members see everyone's progress (including who has read today), share group notes on paragraphs (private notes stay private), and talk on the group's message board. Hosts can make co-hosts, who can also edit the group.
 - **Admin panel** (`/admin`): add, edit, import, export, hide or delete books; edit chapters, sections and paragraphs; find cover art; manage users (edit, reset passwords, grant admin, delete).
 - **Admin API** so scripts or AI assistants can add books with the admin credentials. See [docs/ADMIN_API.md](docs/ADMIN_API.md).
 

@@ -292,7 +292,103 @@ function Users() {
   );
 }
 
-const TABS = { overview: 'Overview', books: 'Books', users: 'Readers' };
+function GlossaryAdmin() {
+  const [terms, setTerms] = useState(null);
+  const [q, setQ] = useState('');
+  const [form, setForm] = useState({ id: null, term: '', definition: '' });
+  const [error, setError] = useState('');
+  const load = useCallback(() => {
+    api(`/admin/glossary?q=${encodeURIComponent(q)}`).then((d) => setTerms(d.terms)).catch((e) => setError(e.message));
+  }, [q]);
+  useEffect(() => {
+    const t = setTimeout(load, 200);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  const save = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      await api(form.id ? `/admin/glossary/${form.id}` : '/admin/glossary', {
+        method: form.id ? 'PATCH' : 'POST',
+        body: { term: form.term, definition: form.definition },
+      });
+      setForm({ id: null, term: '', definition: '' });
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <>
+      <section className="card">
+        <h2>{form.id ? `Edit “${form.term}”` : 'Add a word'}</h2>
+        <p className="muted small">
+          In glossary mode, readers tap a word to see its meaning. Words listed here show first, labelled “In older and Puritan writing.” A
+          regular dictionary definition appears underneath. Add words whose older sense differs from today’s.
+        </p>
+        <form className="form" onSubmit={save}>
+          <div className="row two">
+            <label>
+              Word or phrase
+              <input required value={form.term} onChange={(e) => setForm({ ...form, term: e.target.value })} />
+            </label>
+          </div>
+          <label>
+            Definition
+            <textarea required rows={2} value={form.definition} onChange={(e) => setForm({ ...form, definition: e.target.value })} />
+          </label>
+          {error && <div className="error">{error}</div>}
+          <div className="row">
+            <button className="btn primary">{form.id ? 'Save' : 'Add word'}</button>
+            {form.id && (
+              <button type="button" className="btn ghost" onClick={() => setForm({ id: null, term: '', definition: '' })}>
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+      <div className="toolbar">
+        <h2>Glossary ({terms?.length ?? '…'})</h2>
+        <input type="search" placeholder="Search words" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search glossary" />
+      </div>
+      <div className="table-wrap">
+        <table className="table">
+          <tbody>
+            {terms?.map((t) => (
+              <tr key={t.id}>
+                <td className="nowrap">
+                  <strong>{t.term}</strong>
+                </td>
+                <td>{t.definition}</td>
+                <td className="actions">
+                  <button className="btn small" onClick={() => setForm({ id: t.id, term: t.term, definition: t.definition })}>
+                    <Icon name="edit" size={16} /> Edit
+                  </button>
+                  <button
+                    className="btn small ghost danger"
+                    aria-label={`Delete ${t.term}`}
+                    onClick={async () => {
+                      if (!confirm(`Delete “${t.term}” from the glossary?`)) return;
+                      await api(`/admin/glossary/${t.id}`, { method: 'DELETE' });
+                      load();
+                    }}
+                  >
+                    <Icon name="trash" size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+const TABS = { overview: 'Overview', books: 'Books', users: 'Readers', glossary: 'Glossary' };
 
 export default function Admin() {
   const [params, setParams] = useSearchParams();
@@ -310,6 +406,7 @@ export default function Admin() {
       {tab === 'overview' && <Overview />}
       {tab === 'books' && <Books />}
       {tab === 'users' && <Users />}
+      {tab === 'glossary' && <GlossaryAdmin />}
     </div>
   );
 }

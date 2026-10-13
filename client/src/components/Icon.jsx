@@ -29,6 +29,13 @@ const paths = {
   image: 'M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5M15 9h.01',
   up: 'M6 15l6-6 6 6',
   down: 'M6 9l6 6 6-6',
+  glossary: 'M4 19V5a2 2 0 0 1 2-2h13v14H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h13M9.5 12.5 12 6l2.5 6.5M10.3 10.5h3.4',
+  users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M18 14a6 6 0 0 1 4 7',
+  chat: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
+  shelf: 'M3 20h18M5 20V6h3v14M10 20V4h3v16M15.5 7.2l2.9-.8 3.1 13.2-2.9.8z',
+  bookmark: 'M6 3h12v18l-6-4-6 4z',
+  send: 'M4 12l16-8-6 16-2-7z',
+  crown: 'M3 8l4 4 5-7 5 7 4-4-2 11H5z',
 };
 
 export default function Icon({ name, size = 20, className = '', title }) {

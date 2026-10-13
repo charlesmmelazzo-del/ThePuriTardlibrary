@@ -100,9 +100,17 @@ router.get('/:id/sections/:sectionId', async (req, res) => {
   const [paras, notes, order] = await Promise.all([
     query('SELECT id, seq, original, modern FROM paragraphs WHERE section_id = $1 ORDER BY position, id', [section.id]),
     query(
-      `SELECT n.id, n.paragraph_id, n.body, n.created_at, n.updated_at FROM notes n
+      `SELECT n.id, n.paragraph_id, n.body, n.created_at, n.updated_at, n.group_id, n.user_id,
+              u.name AS author_name, u.email AS author_email, g.name AS group_name,
+              (n.user_id = $1) AS is_mine, coalesce(m.role IN ('host', 'cohost'), FALSE) AS can_moderate
+       FROM notes n
        JOIN paragraphs p ON p.id = n.paragraph_id
-       WHERE n.user_id = $1 AND p.section_id = $2 ORDER BY n.created_at`,
+       JOIN users u ON u.id = n.user_id
+       LEFT JOIN reading_groups g ON g.id = n.group_id
+       LEFT JOIN group_members m ON m.group_id = n.group_id AND m.user_id = $1
+       WHERE p.section_id = $2
+         AND ((n.group_id IS NULL AND n.user_id = $1) OR m.user_id IS NOT NULL)
+       ORDER BY n.created_at`,
       [req.user.id, section.id],
     ),
     query(
@@ -111,6 +119,11 @@ router.get('/:id/sections/:sectionId', async (req, res) => {
       [book.id],
     ),
   ]);
+  const myGroups = await query(
+    `SELECT g.id, g.name FROM reading_groups g JOIN group_members m ON m.group_id = g.id
+     WHERE m.user_id = $1 AND g.book_id = $2 ORDER BY g.created_at`,
+    [req.user.id, book.id],
+  );
   const ids = order.rows.map((r) => r.id);
   const idx = ids.indexOf(section.id);
 
@@ -118,7 +131,11 @@ router.get('/:id/sections/:sectionId', async (req, res) => {
     book: { id: book.id, title: book.title, author: book.author, year: book.year },
     section,
     paragraphs: paras.rows,
-    notes: notes.rows,
+    notes: notes.rows.map(({ author_email: email, author_name: name, ...n }) => ({
+      ...n,
+      author: (name && name.trim()) || String(email).split('@')[0],
+    })),
+    groups: myGroups.rows,
     prev_section_id: idx > 0 ? ids[idx - 1] : null,
     next_section_id: idx < ids.length - 1 ? ids[idx + 1] : null,
     section_index: idx,

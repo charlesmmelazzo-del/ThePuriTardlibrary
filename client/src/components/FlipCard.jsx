@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
+import { wordRangeAt } from './DefinitionPopover.jsx';
 
 const sideOf = (rotation) => ((Math.round(rotation / 180) % 2) + 2) % 2 === 0 ? 'modern' : 'original';
 
@@ -7,10 +8,11 @@ const sideOf = (rotation) => ((Math.round(rotation / 180) % 2) + 2) % 2 === 0 ? 
  * A paragraph shown as a two-sided card: modern English on the front, the original on the back.
  * Swipe sideways (touch) or press the flip button to turn it over.
  */
-export default function FlipCard({ paragraph, side, year, noteCount, highlighted, onAddNote, onShare }) {
+export default function FlipCard({ paragraph, side, year, noteCount, highlighted, glossary, onDefine, onAddNote, onShare }) {
   const [rotation, setRotation] = useState(side === 'original' ? 180 : 0);
   const [drag, setDrag] = useState(0);
   const start = useRef(null);
+  const swiped = useRef(0);
   const shown = sideOf(rotation);
 
   // Follow the reader-wide Modern/Original toggle.
@@ -38,11 +40,30 @@ export default function FlipCard({ paragraph, side, year, noteCount, highlighted
     setDrag(0);
     if (!s?.horizontal) return;
     const dx = e.clientX - s.x;
-    if (Math.abs(dx) > 45) flip(dx > 0 ? 1 : -1);
+    if (Math.abs(dx) > 45) {
+      swiped.current = Date.now();
+      flip(dx > 0 ? 1 : -1);
+    }
   };
   const cancel = () => {
     start.current = null;
     setDrag(0);
+  };
+
+  // Glossary mode: tap a word (or select a phrase) to look it up.
+  const onTextClick = (e) => {
+    if (!glossary || Date.now() - swiped.current < 400) return;
+    const sel = window.getSelection();
+    const selected = sel && !sel.isCollapsed ? sel.toString().trim() : '';
+    if (selected && selected.split(/\s+/).length <= 5 && e.currentTarget.contains(sel.anchorNode)) {
+      onDefine(selected, sel.getRangeAt(0).getBoundingClientRect());
+      return;
+    }
+    const range = wordRangeAt(e.clientX, e.clientY);
+    if (!range || !e.currentTarget.contains(range.startContainer)) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    onDefine(range.toString(), range.getBoundingClientRect());
   };
 
   const face = (which) => {
@@ -53,7 +74,9 @@ export default function FlipCard({ paragraph, side, year, noteCount, highlighted
           {which === 'modern' ? 'Modern English' : `Original${year ? ` · ${year}` : ''}`}
         </div>
         {text ? (
-          <p className={`para-text ${which}`}>{text}</p>
+          <p className={`para-text ${which} ${glossary ? 'glossary-on' : ''}`} onClick={shown === which ? onTextClick : undefined}>
+            {text}
+          </p>
         ) : (
           <p className="para-text muted">
             <em>No {which === 'modern' ? 'modern rendering' : 'original text'} for this paragraph.</em>

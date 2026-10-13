@@ -6,6 +6,8 @@ import Cover from '../components/Cover.jsx';
 import GoalForm from '../components/GoalForm.jsx';
 import GoalSummary, { ProgressBar } from '../components/GoalSummary.jsx';
 import Icon from '../components/Icon.jsx';
+import ShelfPicker from '../components/ShelfPicker.jsx';
+import { useShelves } from '../lib/shelves.js';
 
 export function Toc({ toc, bookId, maxSeq = 0, currentSectionId, onNavigate }) {
   return (
@@ -41,6 +43,14 @@ export default function BookPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [editingGoal, setEditingGoal] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [bookGroups, setBookGroups] = useState([]);
+  const { shelves, toggle, create } = useShelves();
+  useEffect(() => {
+    api(`/groups?book_id=${bookId}&today=${today()}`)
+      .then((d) => setBookGroups(d.groups))
+      .catch(() => {});
+  }, [bookId]);
 
   const load = useCallback(
     () =>
@@ -92,6 +102,15 @@ export default function BookPage() {
                 <Icon name="target" size={18} /> Set a reading goal
               </button>
             )}
+            <button className="btn" onClick={() => setPicking(true)}>
+              <Icon name="bookmark" size={18} />
+              {shelves?.some((s) => s.book_ids.includes(book.id)) ? 'On your shelf' : 'Add to shelf'}
+            </button>
+            {book.total_paragraphs > 0 && (
+              <Link className="btn" to={`/groups?new&book=${book.id}`}>
+                <Icon name="users" size={18} /> Start a reading group
+              </Link>
+            )}
             {user.is_admin && (
               <Link className="btn ghost" to={`/admin/books/${book.id}`}>
                 <Icon name="edit" size={18} /> Edit
@@ -100,6 +119,26 @@ export default function BookPage() {
           </div>
         </div>
       </div>
+
+      {bookGroups.length > 0 && (
+        <section className="card">
+          <h2>Your groups reading this book</h2>
+          <ul className="plain-list">
+            {bookGroups.map((g) => (
+              <li key={g.id}>
+                <Link to={`/groups/${g.id}`}>
+                  <Icon name="users" size={16} /> {g.name}
+                </Link>{' '}
+                <span className="muted small">
+                  · {g.member_count} reader{g.member_count === 1 ? '' : 's'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {picking && <ShelfPicker book={book} shelves={shelves} toggle={toggle} create={create} onClose={() => setPicking(false)} />}
 
       {(goal || editingGoal) && (
         <section className="card">

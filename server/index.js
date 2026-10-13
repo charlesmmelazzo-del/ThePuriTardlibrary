@@ -5,13 +5,16 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import helmet from 'helmet';
-import { migrate } from './db.js';
+import { migrate, query } from './db.js';
 import { ensureAdmin, loadUser } from './auth.js';
 import { seedBooks } from './seed.js';
 import authRoutes from './routes/auth.js';
 import bookRoutes from './routes/books.js';
 import meRoutes from './routes/me.js';
 import adminRoutes from './routes/admin.js';
+import groupRoutes from './routes/groups.js';
+import shelfRoutes from './routes/shelves.js';
+import glossaryRoutes, { seedGlossary } from './routes/glossary.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, '..', 'dist');
@@ -47,13 +50,54 @@ app.get('/api/config', (_req, res) =>
 );
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
+app.use('/api/shelves', shelfRoutes);
+app.use('/api', glossaryRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', groupRoutes);
 app.use('/api', meRoutes);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found.' }));
 
 // Serve the built web app.
+const escapeHtml = (s) =>
+  String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir, { index: false, maxAge: '1h' }));
+
+  // Invitation links get a rich preview (book cover + group name) when shared by text or chat.
+  app.get('/invite/:token', async (req, res, next) => {
+    try {
+      const { rows } = await query(
+        `SELECT g.name, b.title, b.author, b.cover_url, u.name AS host_name, u.email AS host_email
+         FROM group_invites i JOIN reading_groups g ON g.id = i.group_id JOIN books b ON b.id = g.book_id
+         LEFT JOIN users u ON u.id = i.invited_by WHERE i.token = $1`,
+        [req.params.token],
+      );
+      const inv = rows[0];
+      let html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8');
+      if (inv) {
+        const origin = `${req.protocol}://${req.get('host')}`;
+        const host = inv.host_name || String(inv.host_email || '').split('@')[0];
+        const title = `${host} invited you to read ${inv.title} together`;
+        const desc = `Join the “${inv.name}” reading group on ${process.env.APP_NAME || 'The PuriTard Library'}.`;
+        const image = inv.cover_url ? new URL(inv.cover_url, origin).href : `${origin}/favicon.svg`;
+        const meta = [
+          ['og:title', title],
+          ['og:description', desc],
+          ['og:image', image],
+          ['og:type', 'website'],
+          ['twitter:card', 'summary_large_image'],
+        ]
+          .map(([k, v]) => `<meta property="${k}" content="${escapeHtml(v)}" />`)
+          .join('\n    ');
+        html = html.replace(/<title>.*?<\/title>/, `<title>${escapeHtml(title)}</title>\n    ${meta}`);
+      }
+      res.type('html').send(html);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.get('/{*splat}', (_req, res) => res.sendFile(path.join(distDir, 'index.html')));
 }
 
@@ -69,4 +113,5 @@ const port = Number(process.env.PORT) || 3000;
 await migrate();
 await ensureAdmin();
 await seedBooks();
+await seedGlossary();
 app.listen(port, () => console.log(`Listening on http://localhost:${port}`));

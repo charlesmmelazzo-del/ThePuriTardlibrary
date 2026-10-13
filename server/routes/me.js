@@ -24,10 +24,11 @@ router.get('/notes', async (req, res) => {
   }
   const { rows } = await query(
     `SELECT n.id, n.body, n.created_at, n.updated_at, n.paragraph_id, n.book_id,
-            b.title AS book_title, b.author AS book_author,
+            b.title AS book_title, b.author AS book_author, n.group_id, g.name AS group_name,
             p.original, p.modern, s.id AS section_id, s.title AS section_title, c.title AS chapter_title
      FROM notes n
      JOIN books b ON b.id = n.book_id
+     LEFT JOIN reading_groups g ON g.id = n.group_id
      JOIN paragraphs p ON p.id = n.paragraph_id
      JOIN sections s ON s.id = p.section_id
      JOIN chapters c ON c.id = s.chapter_id
@@ -43,11 +44,24 @@ router.post('/notes', async (req, res) => {
   if (!body) return res.status(400).json({ error: 'Note cannot be empty.' });
   const p = await query('SELECT id, book_id FROM paragraphs WHERE id = $1', [intParam(req.body.paragraph_id)]);
   if (!p.rows[0]) return res.status(400).json({ error: 'Unknown paragraph.' });
+  // Optional group_id shares the note with a reading group the user belongs to (for this book).
+  const groupId = intParam(req.body.group_id);
+  let groupName = null;
+  if (groupId) {
+    const g = await query(
+      `SELECT g.name FROM reading_groups g JOIN group_members m ON m.group_id = g.id
+       WHERE g.id = $1 AND m.user_id = $2 AND g.book_id = $3`,
+      [groupId, req.user.id, p.rows[0].book_id],
+    );
+    if (!g.rows[0]) return res.status(403).json({ error: 'You can only share notes with your own reading groups for this book.' });
+    groupName = g.rows[0].name;
+  }
   const { rows } = await query(
-    'INSERT INTO notes (user_id, book_id, paragraph_id, body) VALUES ($1, $2, $3, $4) RETURNING *',
-    [req.user.id, p.rows[0].book_id, p.rows[0].id, body.slice(0, 20000)],
+    'INSERT INTO notes (user_id, book_id, paragraph_id, body, group_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [req.user.id, p.rows[0].book_id, p.rows[0].id, body.slice(0, 20000), groupId],
   );
-  res.status(201).json({ note: rows[0] });
+  const author = (req.user.name && req.user.name.trim()) || req.user.email.split('@')[0];
+  res.status(201).json({ note: { ...rows[0], group_name: groupName, author, is_mine: true } });
 });
 
 router.patch('/notes/:id', async (req, res) => {
@@ -61,8 +75,13 @@ router.patch('/notes/:id', async (req, res) => {
   res.json({ note: rows[0] });
 });
 
+// Delete your own note; hosts and co-hosts can also remove notes shared with their group.
 router.delete('/notes/:id', async (req, res) => {
-  await query('DELETE FROM notes WHERE id = $1 AND user_id = $2', [intParam(req.params.id), req.user.id]);
+  await query(
+    `DELETE FROM notes n WHERE n.id = $1 AND (n.user_id = $2 OR EXISTS (
+       SELECT 1 FROM group_members m WHERE m.group_id = n.group_id AND m.user_id = $2 AND m.role IN ('host', 'cohost')))`,
+    [intParam(req.params.id), req.user.id],
+  );
   res.json({ ok: true });
 });
 

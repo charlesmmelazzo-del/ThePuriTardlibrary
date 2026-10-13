@@ -12,6 +12,7 @@ import {
   signToken,
   validateCredentials,
 } from '../auth.js';
+import { acceptInvites } from './groups.js';
 
 const router = Router();
 
@@ -39,7 +40,9 @@ router.post('/signup', limiter, async (req, res) => {
   );
   const token = signToken(rows[0]);
   setAuthCookie(res, token);
-  res.status(201).json({ user: publicUser(rows[0]), token });
+  // Join any reading groups this email was invited to (and the one whose invite link was used).
+  const groups = await acceptInvites(rows[0], req.body.invite ? String(req.body.invite) : null);
+  res.status(201).json({ user: publicUser(rows[0]), token, joined_group_id: groups[0] || null });
 });
 
 router.post('/login', limiter, async (req, res) => {
@@ -52,7 +55,8 @@ router.post('/login', limiter, async (req, res) => {
   await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);
   const token = signToken(user);
   setAuthCookie(res, token);
-  res.json({ user: publicUser(user), token });
+  const groups = req.body.invite ? await acceptInvites(user, String(req.body.invite)) : [];
+  res.json({ user: publicUser(user), token, joined_group_id: groups[0] || null });
 });
 
 router.post('/logout', (_req, res) => {

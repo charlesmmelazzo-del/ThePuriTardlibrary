@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, formatDateTime } from '../lib/api.js';
 import NoteEditor from '../components/NoteEditor.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
+import Icon from '../components/Icon.jsx';
 
 export default function Notes() {
   const [notes, setNotes] = useState(null);
@@ -89,6 +90,11 @@ export default function Notes() {
                 />
               ) : (
                 <p className="note-body">{n.body}</p>
+              )}
+              {n.group_name && (
+                <div className="small muted">
+                  <Icon name="users" size={13} /> Shared with {n.group_name}
+                </div>
               )}
               <div className="note-meta">
                 <span className="muted small">{formatDateTime(n.updated_at)}</span>
