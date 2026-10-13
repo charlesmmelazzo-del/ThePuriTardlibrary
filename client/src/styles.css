@@ -51,6 +51,8 @@
 }
 html {
   -webkit-text-size-adjust: 100%;
+  /* No double-tap zoom (quick taps on cards and words were zooming the page); pinch zoom still works. */
+  touch-action: manipulation;
 }
 body {
   margin: 0;
@@ -889,6 +891,10 @@ label.checkbox {
 .is-reading .site-header {
   position: static;
 }
+.reader {
+  /* Card flips are 3D transforms; never let them widen the page. */
+  overflow-x: clip;
+}
 .reader-bar {
   position: sticky;
   top: 0;
@@ -1466,7 +1472,7 @@ label.checkbox {
 .para-edit {
   width: 100%;
   display: grid;
-  grid-template-columns: 28px 1fr 1fr auto;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: start;
 }
@@ -2106,6 +2112,12 @@ label.checkbox {
 
 /* ---------- Responsive ---------- */
 @media (max-width: 860px) {
+  /* iPhone Safari zooms into any text box smaller than 16px and stays zoomed. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
   .main-nav,
   .header-search,
   .desktop-only {
@@ -2195,7 +2207,10 @@ label.checkbox {
     max-width: 160px;
   }
   .para-edit {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .chapter-edit-head > .nowrap {
+    display: none;
   }
   .para-edit-num {
     display: none;
