@@ -48,6 +48,19 @@ On every start the server creates the database tables if needed and makes sure t
   APP_URL=https://your-app.up.railway.app ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run import-book -- examples/sample-book.json
   ```
 
+### From a side-by-side PDF
+
+Books in `content/books/*.json` are added to the library automatically the next time the server starts (only if no book with that title exists yet, so later edits in the admin panel are kept). A two-column "original | modern English" PDF with numbered paragraph pairs can be converted with:
+
+```bash
+pip install pdfplumber
+python3 scripts/pdf-to-book.py book.pdf content/books/book.json \
+  --title "The Mortification of Sin" --author "John Owen" --year 1656 \
+  --cover /covers/mortification-of-sin.webp --skip-prefix ED
+```
+
+Cover images go in `client/public/covers/`.
+
 ## Running locally
 
 Requires Node 20+ and PostgreSQL.
