@@ -9,18 +9,21 @@ import { GroupCard } from './Groups.jsx';
 import { useShelves } from '../lib/shelves.js';
 
 const SORTS = {
-  title: { label: 'Title', fn: (a, b) => a.title.localeCompare(b.title) },
+  title: { label: 'Title', fn: (a, b) => sortTitle(a).localeCompare(sortTitle(b)) },
   author: {
     label: 'Author',
-    fn: (a, b) => lastName(a.author).localeCompare(lastName(b.author)) || a.title.localeCompare(b.title),
+    fn: (a, b) => lastName(a.author).localeCompare(lastName(b.author)) || sortTitle(a).localeCompare(sortTitle(b)),
   },
-  year: { label: 'Year (oldest first)', fn: (a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.title.localeCompare(b.title) },
-  yearDesc: { label: 'Year (newest first)', fn: (a, b) => (b.year ?? -1) - (a.year ?? -1) || a.title.localeCompare(b.title) },
+  year: { label: 'Year (oldest first)', fn: (a, b) => (a.year ?? 9999) - (b.year ?? 9999) || sortTitle(a).localeCompare(sortTitle(b)) },
+  yearDesc: { label: 'Year (newest first)', fn: (a, b) => (b.year ?? -1) - (a.year ?? -1) || sortTitle(a).localeCompare(sortTitle(b)) },
   recent: {
     label: 'Recently read',
-    fn: (a, b) => (b.last_read_at || '').localeCompare(a.last_read_at || '') || a.title.localeCompare(b.title),
+    fn: (a, b) => (b.last_read_at || '').localeCompare(a.last_read_at || '') || sortTitle(a).localeCompare(sortTitle(b)),
   },
 };
+
+// "The Death of Death" sorts under D.
+const sortTitle = (b) => b.title.replace(/^(the|a|an)\s+/i, '');
 
 function lastName(author = '') {
   const parts = author.trim().split(/\s+/);

@@ -1708,10 +1708,10 @@ label.checkbox {
 }
 .shelf-toggle {
   position: absolute;
-  top: 6px;
+  bottom: 6px;
   right: 6px;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 0;
   display: inline-flex;
