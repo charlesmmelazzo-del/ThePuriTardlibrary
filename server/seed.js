@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { query, tx } from './db.js';
 import { normalizeChapters, normalizeMeta, replaceContent } from './lib/content.js';
+import { findCover } from './lib/covers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dir = path.join(__dirname, '..', 'content', 'books');
@@ -20,6 +21,8 @@ export async function seedBooks() {
       const exists = await query('SELECT 1 FROM books WHERE lower(title) = lower($1)', [meta.title]);
       if (exists.rowCount) continue;
       const chapters = normalizeChapters(data.chapters || []);
+      // No cover supplied: look for artwork online (Open Library, Google Books, Wikipedia).
+      if (!meta.cover_url) meta.cover_url = await findCover(meta.title, meta.author).catch(() => '');
       await tx(async (client) => {
         const { rows } = await client.query(
           `INSERT INTO books (title, author, year, description, cover_url, published)

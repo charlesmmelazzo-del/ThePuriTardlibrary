@@ -157,8 +157,24 @@ def convert(pdf_paths, skip_prefixes):
             original, modern = join_lines(pair["original"]), join_lines(pair["modern"])
             if original or modern:
                 paragraphs.append({"original": original, "modern": modern})
-        chapters.append({"title": part["title"], "sections": [{"title": "", "paragraphs": paragraphs}]})
+        group, section_title = outer_division(part["title"])
+        section = {"title": section_title if group else "", "paragraphs": paragraphs}
+        if group and chapters and chapters[-1]["title"] == group:
+            chapters[-1]["sections"].append(section)
+        else:
+            chapters.append({"title": group or part["title"], "sections": [section]})
     return info, chapters
+
+
+def outer_division(title):
+    """Books in several parts ("Book II: Chapter III: ...") become a chapter per part with a section per
+    chapter, so the contents nest. Appendices are gathered under "Appendices". Returns (group, rest)."""
+    m = re.match(r"^((?:Book|Part|Volume|Treatise)\s+[IVXLC\d]+)\s*:\s*(.+)$", title)
+    if m:
+        return m.group(1), m.group(2).rstrip(".")
+    if re.match(r"^Appendix\b", title):
+        return "Appendices", title.rstrip(".")
+    return None, title
 
 
 def main():
@@ -192,7 +208,10 @@ def main():
     print(f"{book['title']} — {book['author']} ({book['year']})")
     print(f"{len(chapters)} divisions, {n} paragraph pairs -> {out}")
     for c in chapters:
-        print(f"  {c['title']}: {len(c['sections'][0]['paragraphs'])}")
+        print(f"  {c['title']}: {sum(len(s['paragraphs']) for s in c['sections'])}")
+        if len(c["sections"]) > 1:
+            for s in c["sections"]:
+                print(f"      {s['title'][:80]}: {len(s['paragraphs'])}")
 
 
 if __name__ == "__main__":
