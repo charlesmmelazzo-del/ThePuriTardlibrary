@@ -1018,6 +1018,108 @@ label.checkbox {
 .para {
   scroll-margin-top: 110px;
 }
+
+/* ---------- Bookmarks ---------- */
+.para-wrap {
+  position: relative;
+}
+.para-wrap.bookmarked::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0.25rem;
+  width: 14px;
+  height: 24px;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+}
+.icon.filled path {
+  fill: currentColor;
+}
+.para-actions .bookmark-btn {
+  margin-right: auto;
+}
+.para-btn.bookmark-btn.on {
+  color: var(--accent);
+}
+.bookmark-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.bookmark-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.bookmark-list li:last-child {
+  border-bottom: 0;
+}
+.bookmark-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0.75rem 0.25rem;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+.bookmark-item > .icon,
+.toast > .icon {
+  flex-shrink: 0;
+}
+.bookmark-item > .icon {
+  color: var(--accent);
+  margin-top: 0.15rem;
+}
+.bookmark-item > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.bookmark-where {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.bookmark-excerpt {
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bookmark-list .icon-btn {
+  margin-top: 0.5rem;
+  color: var(--muted);
+}
+.toast {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.88rem;
+  box-shadow: var(--shadow);
+  animation: fade 0.15s;
+}
 .flip-scene {
   perspective: 1600px;
   touch-action: pan-y;
@@ -2161,6 +2263,9 @@ label.checkbox {
   .save-bar {
     bottom: calc(3.6rem + env(safe-area-inset-bottom));
   }
+  .toast {
+    bottom: calc(4.6rem + env(safe-area-inset-bottom));
+  }
   h1 {
     font-size: 1.7rem;
   }
@@ -2230,6 +2335,12 @@ label.checkbox {
   }
 }
 @media (max-width: 480px) {
+  .bar-bookmarks {
+    display: none;
+  }
+  .para-btn {
+    padding: 0.35rem 0.45rem;
+  }
   .auth-page {
     padding-top: 3.8rem;
     align-items: start;

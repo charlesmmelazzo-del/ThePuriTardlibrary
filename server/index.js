@@ -80,7 +80,7 @@ if (fs.existsSync(distDir)) {
         const host = inv.host_name || String(inv.host_email || '').split('@')[0];
         const title = `${host} invited you to read ${inv.title} together`;
         const desc = `Join the “${inv.name}” reading group on ${process.env.APP_NAME || 'The PuriTard Library'}.`;
-        const image = inv.cover_url ? new URL(inv.cover_url, origin).href : `${origin}/favicon.svg`;
+        const image = inv.cover_url ? new URL(inv.cover_url, origin).href : `${origin}/icons/icon-512.png`;
         const meta = [
           ['og:title', title],
           ['og:description', desc],

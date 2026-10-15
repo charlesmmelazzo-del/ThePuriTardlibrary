@@ -8,7 +8,7 @@ import NoteEditor from '../components/NoteEditor.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
 import { goalMessage } from '../components/GoalSummary.jsx';
 import DefinitionPopover from '../components/DefinitionPopover.jsx';
-import { Toc } from './Book.jsx';
+import { BookmarkList, Toc } from './Book.jsx';
 
 const HINT_KEY = 'pl-flip-hint-dismissed';
 const GLOSSARY_KEY = 'pl-glossary-mode';
@@ -59,6 +59,16 @@ export default function Reader() {
   });
   const [define, setDefine] = useState(null); // { word, rect }
   const [groupStatus, setGroupStatus] = useState([]);
+  const [bookmarks, setBookmarks] = useState([]);
+  const [drawerTab, setDrawerTab] = useState('contents');
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+  const showToast = useCallback((text) => {
+    clearTimeout(toastTimer.current);
+    setToast(text);
+    toastTimer.current = setTimeout(() => setToast(null), 3500);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
   const closeDefine = useCallback(() => {
     setDefine(null);
     window.getSelection()?.removeAllRanges();
@@ -86,6 +96,7 @@ export default function Reader() {
       .then((d) => {
         setBook(d);
         setGoal(d.goal);
+        setBookmarks(d.bookmarks || []);
         lastSaved.current.throughSeq = d.progress?.max_seq || 0;
       })
       .catch((e) => setError(e.message));
@@ -181,14 +192,21 @@ export default function Reader() {
     if (!section || !book) return;
     const fromHash = /^#p-(\d+)$/.exec(location.hash)?.[1];
     let target = fromHash ? Number(fromHash) : null;
-    if (!target && firstLoad.current && book.progress?.section_id === section.section.id) {
+    // A bookmark dropped by hand ("take me back here") wins over the automatically saved place.
+    const mark = book.resume_bookmark;
+    const toMark = firstLoad.current && mark?.section_id === section.section.id && (!target || target === mark.paragraph_id);
+    if (toMark) {
+      target = mark.paragraph_id;
+      markResumed(mark.id);
+      showToast('Back to your bookmark');
+    } else if (!target && firstLoad.current && book.progress?.section_id === section.section.id) {
       target = book.progress.paragraph_id;
     }
     firstLoad.current = false;
     const el = target && document.getElementById(`p-${target}`);
     if (el) {
       el.scrollIntoView({ block: 'start' });
-      if (fromHash) {
+      if (fromHash || toMark) {
         setHighlightId(target);
         setTimeout(() => setHighlightId(null), 2500);
       }
@@ -211,6 +229,42 @@ export default function Reader() {
     }
     setTocOpen(false);
     navigate(`/read/${bookId}/${id}`);
+  };
+
+  function markResumed(id) {
+    setBookmarks((list) => list.map((b) => (b.id === id ? { ...b, resume: false } : b)));
+    api(`/books/${bookId}/bookmarks/${id}/resumed`, { method: 'POST' }).catch(() => {});
+  }
+
+  const toggleBookmark = async (p) => {
+    const existing = bookmarks.find((b) => b.paragraph_id === p.id);
+    try {
+      if (existing) {
+        await api(`/books/${bookId}/bookmarks/${existing.id}`, { method: 'DELETE' });
+        setBookmarks((list) => list.filter((b) => b.id !== existing.id));
+        showToast('Bookmark removed');
+      } else {
+        const { bookmark } = await api(`/books/${bookId}/bookmarks`, { method: 'POST', body: { paragraph_id: p.id } });
+        setBookmarks((list) =>
+          [...list.map((b) => ({ ...b, resume: false })), bookmark].sort((a, b) => a.seq - b.seq),
+        );
+        showToast('Bookmarked: the book opens here next time');
+      }
+    } catch (e) {
+      showToast(e.message);
+    }
+  };
+
+  const goToBookmark = (b) => {
+    setTocOpen(false);
+    if (b.resume) markResumed(b.id);
+    if (b.section_id === section.section.id) {
+      document.getElementById(`p-${b.paragraph_id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      setHighlightId(b.paragraph_id);
+      setTimeout(() => setHighlightId(null), 2500);
+    } else {
+      navigate(`/read/${bookId}/${b.section_id}#p-${b.paragraph_id}`);
+    }
   };
 
   const changeFont = (delta) => {
@@ -262,7 +316,14 @@ export default function Reader() {
           <Link to={`/books/${bookId}`} className="icon-btn" aria-label="Back to book">
             <Icon name="left" />
           </Link>
-          <button className="reader-title" onClick={() => setTocOpen(true)} aria-label="Open contents">
+          <button
+            className="reader-title"
+            onClick={() => {
+              setDrawerTab('contents');
+              setTocOpen(true);
+            }}
+            aria-label="Open contents"
+          >
             <span className="reader-book">{section.book.title}</span>
             <span className="reader-where">
               {sec.chapter_title}
@@ -294,7 +355,25 @@ export default function Reader() {
           >
             <Icon name="glossary" />
           </button>
-          <button className="icon-btn" onClick={() => setTocOpen(true)} aria-label="Contents">
+          <button
+            className="icon-btn bar-bookmarks"
+            onClick={() => {
+              setDrawerTab('bookmarks');
+              setTocOpen(true);
+            }}
+            aria-label="Bookmarks"
+            title="Bookmarks"
+          >
+            <Icon name="bookmark" />
+          </button>
+          <button
+            className="icon-btn"
+            onClick={() => {
+              setDrawerTab('contents');
+              setTocOpen(true);
+            }}
+            aria-label="Contents"
+          >
             <Icon name="list" />
           </button>
         </div>
@@ -374,9 +453,11 @@ export default function Reader() {
           const pNotes = notes.filter((n) => n.paragraph_id === p.id);
           const open = notesOpen === p.id;
           return (
-            <div key={p.id} className="para-wrap">
+            <div key={p.id} className={`para-wrap ${bookmarks.some((b) => b.paragraph_id === p.id) ? 'bookmarked' : ''}`}>
               <FlipCard
                 paragraph={p}
+                bookmarked={bookmarks.some((b) => b.paragraph_id === p.id)}
+                onBookmark={() => toggleBookmark(p)}
                 side={side}
                 year={section.book.year}
                 noteCount={pNotes.length}
@@ -482,21 +563,38 @@ export default function Reader() {
 
       {tocOpen && (
         <div className="drawer-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setTocOpen(false)}>
-          <aside className="drawer" aria-label="Contents">
+          <aside className="drawer" aria-label={drawerTab === 'bookmarks' ? 'Bookmarks' : 'Contents'}>
             <div className="modal-head">
-              <h2>Contents</h2>
+              <div className="segmented" role="tablist">
+                <button role="tab" aria-selected={drawerTab === 'contents'} className={drawerTab === 'contents' ? 'active' : ''} onClick={() => setDrawerTab('contents')}>
+                  <Icon name="list" size={16} /> Contents
+                </button>
+                <button role="tab" aria-selected={drawerTab === 'bookmarks'} className={drawerTab === 'bookmarks' ? 'active' : ''} onClick={() => setDrawerTab('bookmarks')}>
+                  <Icon name="bookmark" size={16} /> Bookmarks{bookmarks.length ? ` (${bookmarks.length})` : ''}
+                </button>
+              </div>
               <button className="icon-btn" onClick={() => setTocOpen(false)} aria-label="Close">
                 <Icon name="close" />
               </button>
             </div>
-            <Toc
-              toc={book.toc}
-              bookId={bookId}
-              maxSeq={Math.max(goal?.done_paragraphs || 0, lastSaved.current.throughSeq)}
-              currentSectionId={sec.id}
-              onNavigate={() => setTocOpen(false)}
-            />
+            {drawerTab === 'bookmarks' ? (
+              <BookmarkList bookmarks={bookmarks} onOpen={goToBookmark} onRemove={(b) => toggleBookmark({ id: b.paragraph_id })} />
+            ) : (
+              <Toc
+                toc={book.toc}
+                bookId={bookId}
+                maxSeq={Math.max(goal?.done_paragraphs || 0, lastSaved.current.throughSeq)}
+                currentSectionId={sec.id}
+                onNavigate={() => setTocOpen(false)}
+              />
+            )}
           </aside>
+        </div>
+      )}
+
+      {toast && (
+        <div className="toast" role="status">
+          <Icon name="bookmark" size={16} className="filled" /> {toast}
         </div>
       )}
 

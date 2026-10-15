@@ -116,7 +116,7 @@ export default function Library() {
                 <ProgressBar percent={lastRead.percent} label="Progress" />
                 <div className="muted small">{lastRead.percent}% read</div>
                 <Link className="btn primary small" to={`/read/${lastRead.id}/${lastRead.resume_section_id}`}>
-                  Pick up where you left off
+                  {lastRead.resume_at_bookmark ? 'Back to your bookmark' : 'Pick up where you left off'}
                 </Link>
               </div>
             </div>

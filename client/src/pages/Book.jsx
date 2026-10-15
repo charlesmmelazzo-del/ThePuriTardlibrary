@@ -35,6 +35,42 @@ export function Toc({ toc, bookId, maxSeq = 0, currentSectionId, onNavigate }) {
   );
 }
 
+/** A reader's bookmarks in a book, in reading order. */
+export function BookmarkList({ bookmarks, onOpen, onRemove }) {
+  if (!bookmarks.length) {
+    return (
+      <p className="muted small">
+        No bookmarks yet. Tap <strong>Bookmark</strong> under any paragraph and the book will open there next time.
+      </p>
+    );
+  }
+  return (
+    <ul className="bookmark-list">
+      {bookmarks.map((b) => (
+        <li key={b.id}>
+          <button className="bookmark-item" onClick={() => onOpen(b)}>
+            <Icon name="bookmark" size={18} className="filled" />
+            <span>
+              <span className="bookmark-where">
+                {b.chapter_title}
+                {b.section_title ? ` › ${b.section_title}` : ''}
+              </span>
+              <span className="bookmark-excerpt">{b.excerpt}</span>
+              <span className="muted small">
+                {new Date(b.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                {b.resume ? ' · opens here next time' : ''}
+              </span>
+            </span>
+          </button>
+          <button className="icon-btn" onClick={() => onRemove(b)} aria-label="Remove bookmark">
+            <Icon name="trash" size={18} />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function BookPage() {
   const { bookId } = useParams();
   const [params] = useSearchParams();
@@ -71,7 +107,7 @@ export default function BookPage() {
 
   if (error) return <div className="page"><div className="error">{error}</div></div>;
   if (!data) return <div className="page muted">Loading…</div>;
-  const { book, toc, progress, goal, resume_section_id: resumeId, percent } = data;
+  const { book, toc, progress, goal, resume_section_id: resumeId, percent, bookmarks = [], resume_bookmark: resumeMark } = data;
   const remaining = book.total_paragraphs - (progress?.max_seq || 0);
 
   return (
@@ -94,7 +130,8 @@ export default function BookPage() {
           <div className="row">
             {resumeId && (
               <Link className="btn primary" to={`/read/${book.id}/${resumeId}`}>
-                <Icon name="book" size={18} /> {progress ? 'Continue reading' : 'Start reading'}
+                <Icon name={resumeMark ? 'bookmark' : 'book'} size={18} />{' '}
+                {resumeMark ? 'Back to your bookmark' : progress ? 'Continue reading' : 'Start reading'}
               </Link>
             )}
             {!goal && !editingGoal && book.total_paragraphs > 0 && (
@@ -175,6 +212,20 @@ export default function BookPage() {
           ) : (
             <GoalSummary goal={goal} continueTo={resumeId ? `/read/${book.id}/${resumeId}` : null} />
           )}
+        </section>
+      )}
+
+      {bookmarks.length > 0 && (
+        <section className="card">
+          <h2>Bookmarks</h2>
+          <BookmarkList
+            bookmarks={bookmarks}
+            onOpen={(b) => navigate(`/read/${book.id}/${b.section_id}#p-${b.paragraph_id}`)}
+            onRemove={async (b) => {
+              await api(`/books/${book.id}/bookmarks/${b.id}`, { method: 'DELETE' });
+              load();
+            }}
+          />
         </section>
       )}
 

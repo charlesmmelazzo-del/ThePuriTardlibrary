@@ -206,3 +206,18 @@ CREATE TABLE IF NOT EXISTS shelf_books (
   added_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (shelf_id, book_id)
 );
+
+/* ---------- Bookmarks ---------- */
+
+-- Places a reader marks by hand. The newest bookmark with `resume` set is where the book opens
+-- next time; it is cleared once the reader has been taken back there.
+CREATE TABLE IF NOT EXISTS bookmarks (
+  id            SERIAL PRIMARY KEY,
+  user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  book_id       INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  paragraph_id  INTEGER NOT NULL REFERENCES paragraphs(id) ON DELETE CASCADE,
+  resume        BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, paragraph_id)
+);
+CREATE INDEX IF NOT EXISTS bookmarks_user_book_idx ON bookmarks(user_id, book_id);

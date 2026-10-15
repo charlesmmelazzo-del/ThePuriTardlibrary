@@ -12,6 +12,14 @@ const intParam = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
+const BOOKMARK_SELECT = `SELECT bm.id, bm.paragraph_id, bm.resume, bm.created_at, p.section_id, p.seq,
+         left(coalesce(nullif(p.modern, ''), p.original), 160) AS excerpt,
+         s.title AS section_title, c.title AS chapter_title
+  FROM bookmarks bm
+  JOIN paragraphs p ON p.id = bm.paragraph_id
+  JOIN sections s ON s.id = p.section_id
+  JOIN chapters c ON c.id = s.chapter_id`;
+
 async function getBook(req, id) {
   const { rows } = await query(`SELECT * FROM books b WHERE b.id = $1 AND ${visible(req)}`, [id]);
   return rows[0] || null;
@@ -24,13 +32,18 @@ router.get('/', async (req, res) => {
             coalesce(pc.total, 0) AS total_paragraphs,
             coalesce(cc.chapters, 0) AS chapter_count,
             coalesce(pr.max_seq, 0) AS max_seq,
-            pr.section_id AS resume_section_id,
-            pr.updated_at AS last_read_at,
+            coalesce(rb.section_id, pr.section_id) AS resume_section_id,
+            (rb.section_id IS NOT NULL) AS resume_at_bookmark,
+            greatest(pr.updated_at, rb.created_at) AS last_read_at,
             (g.id IS NOT NULL) AS has_goal
      FROM books b
      LEFT JOIN (SELECT book_id, count(*)::int AS total FROM paragraphs GROUP BY book_id) pc ON pc.book_id = b.id
      LEFT JOIN (SELECT book_id, count(*)::int AS chapters FROM chapters GROUP BY book_id) cc ON cc.book_id = b.id
      LEFT JOIN progress pr ON pr.book_id = b.id AND pr.user_id = $1
+     LEFT JOIN LATERAL (
+       SELECT p.section_id, bm.created_at FROM bookmarks bm JOIN paragraphs p ON p.id = bm.paragraph_id
+       WHERE bm.user_id = $1 AND bm.book_id = b.id AND bm.resume ORDER BY bm.created_at DESC LIMIT 1
+     ) rb ON TRUE
      LEFT JOIN goals g ON g.book_id = b.id AND g.user_id = $1
      WHERE ${visible(req)}
      ORDER BY b.title`,
@@ -49,7 +62,7 @@ router.get('/:id', async (req, res) => {
   const book = await getBook(req, intParam(req.params.id));
   if (!book) return res.status(404).json({ error: 'Book not found.' });
 
-  const [chapters, sections, prog, goal] = await Promise.all([
+  const [chapters, sections, prog, goal, marks] = await Promise.all([
     query('SELECT id, title FROM chapters WHERE book_id = $1 ORDER BY position, id', [book.id]),
     query(
       `SELECT s.id, s.chapter_id, s.title, count(p.id)::int AS paragraphs,
@@ -63,6 +76,7 @@ router.get('/:id', async (req, res) => {
       book.id,
     ]),
     query('SELECT * FROM goals WHERE user_id = $1 AND book_id = $2', [req.user.id, book.id]),
+    query(`${BOOKMARK_SELECT} WHERE bm.user_id = $1 AND bm.book_id = $2 ORDER BY p.seq`, [req.user.id, book.id]),
   ]);
 
   const byChapter = new Map(chapters.rows.map((c) => [c.id, { ...c, sections: [] }]));
@@ -71,12 +85,16 @@ router.get('/:id', async (req, res) => {
   const total = sections.rows.reduce((n, s) => n + s.paragraphs, 0);
   const progress = prog.rows[0] || null;
   const firstSection = toc.flatMap((c) => c.sections)[0];
+  // A bookmark the reader asked to come back to wins over the automatically saved place.
+  const resumeBookmark = marks.rows.filter((m) => m.resume).sort((a, b) => b.created_at - a.created_at)[0] || null;
 
   res.json({
     book: { ...book, total_paragraphs: total },
     toc,
     progress,
-    resume_section_id: progress?.section_id || firstSection?.id || null,
+    resume_section_id: resumeBookmark?.section_id || progress?.section_id || firstSection?.id || null,
+    bookmarks: marks.rows,
+    resume_bookmark: resumeBookmark,
     percent: total && progress ? Math.min(100, Math.round((progress.max_seq / total) * 100)) : 0,
     goal: goal.rows[0] ? await goalStatus({ query }, goal.rows[0], todayFrom(req)) : null,
   });
@@ -185,6 +203,39 @@ router.put('/:id/progress', async (req, res) => {
     }
   }
   res.json({ max_seq: newMax, goal: status });
+});
+
+/* ---------- Bookmarks ---------- */
+
+// Drop a bookmark. The newest bookmark becomes the place the book opens next time.
+router.post('/:id/bookmarks', async (req, res) => {
+  const bookId = intParam(req.params.id);
+  const paragraphId = intParam(req.body.paragraph_id);
+  const { rows } = await query('SELECT id FROM paragraphs WHERE id = $1 AND book_id = $2', [paragraphId, bookId]);
+  if (!rows[0]) return res.status(400).json({ error: 'Unknown paragraph.' });
+  await query('UPDATE bookmarks SET resume = FALSE WHERE user_id = $1 AND book_id = $2 AND resume', [req.user.id, bookId]);
+  const ins = await query(
+    `INSERT INTO bookmarks (user_id, book_id, paragraph_id) VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, paragraph_id) DO UPDATE SET resume = TRUE, created_at = now()
+     RETURNING id`,
+    [req.user.id, bookId, paragraphId],
+  );
+  const { rows: marks } = await query(`${BOOKMARK_SELECT} WHERE bm.id = $1`, [ins.rows[0].id]);
+  res.json({ bookmark: marks[0] });
+});
+
+// The reader has been taken back to this bookmark; stop opening the book there.
+router.post('/:id/bookmarks/:bookmarkId/resumed', async (req, res) => {
+  await query('UPDATE bookmarks SET resume = FALSE WHERE id = $1 AND user_id = $2', [
+    intParam(req.params.bookmarkId),
+    req.user.id,
+  ]);
+  res.json({ ok: true });
+});
+
+router.delete('/:id/bookmarks/:bookmarkId', async (req, res) => {
+  await query('DELETE FROM bookmarks WHERE id = $1 AND user_id = $2', [intParam(req.params.bookmarkId), req.user.id]);
+  res.json({ ok: true });
 });
 
 // Start over: clear position (keeps notes).

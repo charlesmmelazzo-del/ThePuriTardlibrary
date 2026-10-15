@@ -8,6 +8,8 @@ A web app for reading Puritan and Reformed classics paragraph by paragraph. Each
 
 - **Flip cards.** Swipe a paragraph sideways (or tap *Original*/*Modern*) to turn it over. A switch at the top flips every card at once, and readers choose which side faces up by default.
 - **Picks up where you left off.** Opening a book returns you to the exact paragraph you were reading.
+- **Bookmarks.** Tap *Bookmark* under any paragraph and the book opens there next time, even if you read on or jump around in between. All bookmarks are listed in the reader (*Contents → Bookmarks*) and on the book's page.
+- **Home-screen app.** Add it to an iPhone or Android home screen and it opens full-screen with its own icon (`client/public/icons/`, `manifest.webmanifest`).
 - **Notes** on any paragraph, collected on the *Notes* page and searchable.
 - **Sharing.** Send an excerpt (modern, original or both, with citation) by the device share sheet, text message or email, or copy it.
 - **Reading goals.** Pick a book and a finish date (1 week to 1 year, or any date). Each day the app says how much to read and how far that takes you. Miss some days and it works out the new daily amount needed to catch up.

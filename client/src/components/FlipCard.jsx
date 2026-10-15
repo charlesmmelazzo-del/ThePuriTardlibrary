@@ -8,7 +8,19 @@ const sideOf = (rotation) => ((Math.round(rotation / 180) % 2) + 2) % 2 === 0 ? 
  * A paragraph shown as a two-sided card: modern English on the front, the original on the back.
  * Swipe sideways (touch) or press the flip button to turn it over.
  */
-export default function FlipCard({ paragraph, side, year, noteCount, highlighted, glossary, onDefine, onAddNote, onShare }) {
+export default function FlipCard({
+  paragraph,
+  side,
+  year,
+  noteCount,
+  highlighted,
+  glossary,
+  bookmarked,
+  onDefine,
+  onAddNote,
+  onShare,
+  onBookmark,
+}) {
   const [rotation, setRotation] = useState(side === 'original' ? 180 : 0);
   const [drag, setDrag] = useState(0);
   const start = useRef(null);
@@ -101,6 +113,16 @@ export default function FlipCard({ paragraph, side, year, noteCount, highlighted
         </div>
       </div>
       <div className="para-actions">
+        <button
+          className={`para-btn bookmark-btn ${bookmarked ? 'on' : ''}`}
+          onClick={onBookmark}
+          aria-pressed={!!bookmarked}
+          aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark this paragraph'}
+          title={bookmarked ? 'Remove bookmark' : 'Bookmark: open here next time'}
+        >
+          <Icon name="bookmark" size={18} className={bookmarked ? 'filled' : ''} />
+          <span>{bookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+        </button>
         <button className="para-btn" onClick={() => flip(1)} aria-label={`Show ${shown === 'modern' ? 'original' : 'modern'} text`}>
           <Icon name="flip" size={18} />
           <span>{shown === 'modern' ? 'Original' : 'Modern'}</span>
